@@ -373,6 +373,87 @@ An unknown `format` reports `has an unknown format "<name>"`.
 
 In the DSL, `format` is a regular property: `[1] { type "string"; format "plain-date" }`.
 
+## Default issue messages
+
+Every issue has a `message`, a `severity` (default `"error"`) and, when it can
+be located, a `loc`. A rule's own `message` replaces the default below, on the
+constraint (or rule body, or document) that produced the issue. The default
+messages never repeat the offending value, which may be a secret. `N` is the
+1-based argument position.
+
+| Issue                                                                                                  | Default message                                                                        |
+| ------------------------------------------------------------------------------------------------------ | -------------------------------------------------------------------------------------- |
+| An argument fails its constraint and has a `type`                                                      | `argument at position N must be of type T`                                             |
+| An argument fails its constraint and has no `type` (e.g. `enum`, `pattern`, a range, `or`/`and`/`not`) | `argument at position N does not satisfy the constraint`                               |
+| An argument has the right `type` but fails its `format`                                                | `argument at position N must be a valid F: <description> (e.g. <example>)` (see below) |
+| An argument's `format` is not a known one                                                              | `argument at position N has an unknown format "F"`                                     |
+| A sub-path occurs more than `max` times (reported on each extra occurrence)                            | `too many occurrences (max M)`                                                         |
+| A sub-path occurs fewer than `min` times (reported on the parent)                                      | `too few occurrences (min M)`                                                          |
+| A `required` sub-path is missing                                                                       | `required directive is missing`                                                        |
+| A document-level `not` whose inner rule matches                                                        | `document must not match the given rule`                                               |
+
+Notes:
+
+- When the `type` is wrong, the `must be of type T` message wins over any
+  `format` message; the `format` message only appears once the `type` matches.
+- A document-level `or` with no passing alternative reports the issues of the
+  alternative with the fewest issues, or a single issue with the document's own
+  `message` if it has one.
+- Issues yielded by an `evaluation` function carry whatever `message` and
+  `severity` that function sets.
+
+### Format messages
+
+A failing `format` reports
+`argument at position N must be a valid <format>: <description> (e.g. <example>)`,
+where `<format>` is the name the rule wrote (aliases included, e.g.
+`PlainDate`):
+
+| `format`               | Described as                                                        | Example                                    |
+| ---------------------- | ------------------------------------------------------------------- | ------------------------------------------ |
+| `"json"`               | text that parses as JSON                                            | `{"a":1}`                                  |
+| `"url"`                | an absolute URL                                                     | `https://example.com/path`                 |
+| `"ipv4"`               | an IPv4 address                                                     | `192.0.2.1`                                |
+| `"ipv6"`               | an IPv6 address                                                     | `2001:db8::1`                              |
+| `"CIDR"`               | an IPv4 or IPv6 address                                             | `192.0.2.1 or 2001:db8::1`                 |
+| `"hostname"`           | an RFC 1123 hostname                                                | `api.example.com`                          |
+| `"port"`               | an integer port from 0 to 65535                                     | `8080`                                     |
+| `"port-well-known"`    | an integer well-known port from 0 to 1023                           | `443`                                      |
+| `"port-registered"`    | an integer registered port from 1024 to 49151                       | `8080`                                     |
+| `"port-ephemeral"`     | an integer ephemeral port from 49152 to 65535                       | `50000`                                    |
+| `"uuid"`               | a canonical UUID                                                    | `123e4567-e89b-42d3-a456-426614174000`     |
+| `"email"`              | an RFC 5322 email address                                           | `user@example.com`                         |
+| `"regexp"`             | a valid JavaScript regular expression                               | `^[a-z]+$`                                 |
+| `"semver"`             | a Semantic Versioning 2.0.0 version                                 | `1.2.3-rc.1+build.5`                       |
+| `"duration"`           | an ISO 8601 duration                                                | `P1Y2M3DT4H5M6S`                           |
+| `"plain-date"`         | an ISO 8601 calendar date (YYYY-MM-DD)                              | `2024-02-29`                               |
+| `"plain-time"`         | an ISO 8601 time of day (HH:mm[:ss[.fffffffff]])                    | `10:30:15`                                 |
+| `"plain-date-time"`    | an ISO 8601 date and time without an offset (YYYY-MM-DDTHH:mm[:ss]) | `2024-02-29T10:30:15`                      |
+| `"instant"`            | an ISO 8601 date and time with a Z or a UTC offset                  | `2024-02-29T10:30:15Z`                     |
+| `"plain-year-month"`   | a year and month (YYYY-MM)                                          | `2024-02`                                  |
+| `"plain-month-day"`    | a month and day (MM-DD)                                             | `02-29`                                    |
+| `"zoned-date-time"`    | an ISO 8601 date and time with a [time zone]                        | `2024-02-29T10:30:15+01:00[Europe/Madrid]` |
+| `"epoch-seconds"`      | an integer number of seconds since the Unix epoch                   | `1709202615`                               |
+| `"epoch-milliseconds"` | an integer number of milliseconds since the Unix epoch              | `1709202615000`                            |
+| `"epoch-nanoseconds"`  | a bigint number of nanoseconds since the Unix epoch                 | `1709202615000000000n`                     |
+
+The IP formats (`ipv4`, `ipv6`, `CIDR`) only mention a range when the value was
+written with one (`<ip>/<range>`), and then name the limit that applies:
+
+| `format` | Described as, when the value has a range                         | Example                         |
+| -------- | ---------------------------------------------------------------- | ------------------------------- |
+| `"ipv4"` | an IPv4 address with a range from /0 to /32                      | `10.0.0.0/8`                    |
+| `"ipv6"` | an IPv6 address with a range from /0 to /128                     | `2001:db8::/32`                 |
+| `"CIDR"` | the family's own description above (`:` in the value means IPv6) | `10.0.0.0/8` or `2001:db8::/32` |
+
+### CLI errors
+
+`donly lint` throws its usage text when the arguments are missing or invalid:
+
+```
+Usage: donly lint --rules <rules.json|rules.donly> [--output|-o default|json] <file.donly>
+```
+
 ## JSON example: argument at position 1 must be a number
 
 ```json
