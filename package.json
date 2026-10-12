@@ -1,6 +1,6 @@
 {
   "name": "donly",
-  "version": "0.0.32",
+  "version": "0.0.33",
   "description": "DON (Directive Object Notation) - A human-readable data serialization format based on directives and subdirectives for configuration files, infrastructure definitions, and structured data",
   "keywords": [
     "don",
