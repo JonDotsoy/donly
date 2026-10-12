@@ -12,6 +12,9 @@ import {
   isIpv4,
   isIpv6,
   isPort,
+  isPortEphemeral,
+  isPortRegistered,
+  isPortWellKnown,
   isRegexp,
   isSemver,
   isUrl,
@@ -214,6 +217,21 @@ const formats: Record<string, FormatSpec> = {
   ),
   hostname: spec(isHostname, "an RFC 1123 hostname", "api.example.com"),
   port: spec(isPort, "an integer port from 0 to 65535", "8080"),
+  "port-well-known": spec(
+    isPortWellKnown,
+    "an integer well-known port from 0 to 1023",
+    "443",
+  ),
+  "port-registered": spec(
+    isPortRegistered,
+    "an integer registered port from 1024 to 49151",
+    "8080",
+  ),
+  "port-ephemeral": spec(
+    isPortEphemeral,
+    "an integer ephemeral port from 49152 to 65535",
+    "50000",
+  ),
   uuid: spec(
     isUuid,
     "a canonical UUID",

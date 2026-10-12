@@ -105,10 +105,15 @@ export type StringFormat =
  * `format` values for a `"number"` argument: a Unix epoch as an integer count
  * of seconds or milliseconds since 1970-01-01T00:00:00Z, within the range
  * `Temporal.Instant.fromEpochMilliseconds()` accepts. `"port"` is an integer
- * TCP/UDP port from 0 to 65535.
+ * TCP/UDP port from 0 to 65535; `"port-well-known"` (0-1023),
+ * `"port-registered"` (1024-49151) and `"port-ephemeral"` (49152-65535) narrow
+ * it to one IANA range.
  */
 export type NumberFormat =
   | "port"
+  | "port-well-known"
+  | "port-registered"
+  | "port-ephemeral"
   | "epoch-seconds"
   | "EpochSeconds"
   | "unix"

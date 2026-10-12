@@ -292,6 +292,62 @@ server {
   });
 });
 
+describe("port range formats", () => {
+  const check = (format: string, literal: string) =>
+    lintSchema(`d ${literal}`, {
+      "/d": { "[1]": { type: "number", format } as ArgumentConstraint },
+    }).length === 0;
+
+  const cases: Record<string, [string[], string[]]> = {
+    "port-well-known": [
+      ["0", "80", "1023"],
+      ["1024", "65535", "-1", "1.5", "'80'"],
+    ],
+    "port-registered": [
+      ["1024", "8080", "49151"],
+      ["0", "1023", "49152", "65536", "1.5", "'8080'"],
+    ],
+    "port-ephemeral": [
+      ["49152", "50000", "65535"],
+      ["0", "49151", "65536", "1.5", "'50000'"],
+    ],
+  };
+
+  for (const [format, [valid, invalid]] of Object.entries(cases)) {
+    test(`${format} accepts only its range`, () => {
+      for (const v of valid) expect([v, check(format, v)]).toEqual([v, true]);
+      for (const v of invalid) expect([v, check(format, v)]).toEqual([v, false]);
+    });
+  }
+
+  test("works inside a block next to other directives and without a type", () => {
+    const rule = {
+      "/server/listen": { "[1]": { type: "number", format: "port-registered" } },
+      "/server/host": { "[1]": { type: "string", format: "hostname" } },
+    } satisfies LintRuleDocument;
+    const doc = (port: string) => `name "x"
+server {
+  listen ${port}
+  host 'api.example.com'
+}`;
+    expect(lintSchema(doc("8080"), rule)).toHaveLength(0);
+    expect(lintSchema(doc("80"), rule)).toHaveLength(1);
+    expect(
+      lintSchema("d 443", { "/d": { "[1]": { format: "port-well-known" } } }),
+    ).toHaveLength(0);
+  });
+
+  test("default message names the range", () => {
+    expect(
+      lintSchema("d 8080", {
+        "/d": { "[1]": { type: "number", format: "port-well-known" } },
+      })[0]?.message,
+    ).toBe(
+      "argument at position 1 must be a valid port-well-known: an integer well-known port from 0 to 1023 (e.g. 443)",
+    );
+  });
+});
+
 describe("default message for a failing format", () => {
   const message = (doc: string, constraint: object): string | undefined =>
     lintSchema(doc, {
@@ -354,7 +410,7 @@ describe("default message for a failing format", () => {
 
   test("every known format has a description and an example", () => {
     const formats = [
-      "json", "url", "ipv4", "ipv6", "CIDR", "hostname", "port", "uuid",
+      "json", "url", "ipv4", "ipv6", "CIDR", "hostname", "port", "port-well-known", "port-registered", "port-ephemeral", "uuid",
       "email", "regexp", "semver", "duration", "plain-date", "PlainDate",
       "plain-time", "PlainTime", "plain-date-time", "PlainDateTime",
       "instant", "Instant", "plain-year-month", "PlainYearMonth",

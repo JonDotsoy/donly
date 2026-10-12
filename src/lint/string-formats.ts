@@ -142,6 +142,21 @@ export const isPort = (value: unknown): boolean =>
   value >= 0 &&
   value <= 65535;
 
+const isPortInRange = (value: unknown, min: number, max: number): boolean =>
+  isPort(value) && (value as number) >= min && (value as number) <= max;
+
+/** A well-known (system) port: an integer `number` from 0 to 1023. */
+export const isPortWellKnown = (value: unknown): boolean =>
+  isPortInRange(value, 0, 1023);
+
+/** A registered port: an integer `number` from 1024 to 49151. */
+export const isPortRegistered = (value: unknown): boolean =>
+  isPortInRange(value, 1024, 49151);
+
+/** An ephemeral (dynamic/private) port: an integer `number` from 49152 to 65535. */
+export const isPortEphemeral = (value: unknown): boolean =>
+  isPortInRange(value, 49152, 65535);
+
 const UUID_RE =
   /^(?:[0-9a-f]{8}-[0-9a-f]{4}-[1-8][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$/i;
 

@@ -22,7 +22,9 @@ documentation.
   `"epoch-nanoseconds"`. With `type: "string"` or `type: "heredoc"` (checked
   against its content): `"json"`. With `type: "string"`: `"url"`, `"ipv4"` (optional `/0`-`/32` range),
   `"ipv6"` (optional `/0`-`/128` range), `"CIDR"` (either, optional range), `"hostname"` (RFC 1123), `"uuid"`, `"email"` (RFC 5322),
-  `"regexp"` and `"semver"`. With `type: "number"`: `"port"`. When a `format`
+  `"regexp"` and `"semver"`. With `type: "number"`: `"port"` and its IANA ranges
+  `"port-well-known"` (0-1023), `"port-registered"` (1024-49151) and
+  `"port-ephemeral"` (49152-65535). When a `format`
   fails, the default issue message names the format and describes it with an
   example.
 - `DON.parse(text)` — parses a DON document into an array of `Directive` nodes.

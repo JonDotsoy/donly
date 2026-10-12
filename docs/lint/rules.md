@@ -321,6 +321,15 @@ With `type: "number"`, `"port"` accepts an integer from 0 to 65535.
 `gte`/`gt`/`lte`/`lt` still apply, e.g. `{ "type": "number", "format": "port", "gte": 1024 }`
 forbids privileged ports.
 
+The IANA port ranges are also available as narrower formats (all with
+`type: "number"`):
+
+| `format`            | Range         | Hex             |
+| ------------------- | ------------- | --------------- |
+| `"port-well-known"` | 0 - 1023      | 0x0000 - 0x03FF |
+| `"port-registered"` | 1024 - 49151  | 0x0400 - 0xBFFF |
+| `"port-ephemeral"`  | 49152 - 65535 | 0xC000 - 0xFFFF |
+
 With `type: "number"` (an integer Unix epoch, within the range
 `Temporal.Instant.fromEpochMilliseconds()` accepts; `gte`/`gt`/`lte`/`lt` bound
 it in the same unit):
