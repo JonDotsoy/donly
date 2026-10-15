@@ -13,6 +13,10 @@ documentation.
 
 ### Added
 
+- Lint rule bodies accept `or` (alternative shapes decided per matched
+  directive, so a directive such as `listen` can be valid in several formats)
+  and `minArgs` / `maxArgs` (argument-count limits). Also available in the
+  `.donly` rules DSL.
 - `LintRuleDocument` `format` attribute (also accepted by the lint rules DSL),
   validated with `temporal-polyfill`. With `type: "string"`: `"duration"`,
   `"plain-date"`, `"plain-time"`, `"plain-date-time"`, `"instant"`,

@@ -23,9 +23,12 @@ const BODY_META_KEYS = new Set([
   "required",
   "max",
   "min",
+  "minArgs",
+  "maxArgs",
   "message",
   "severity",
   "and",
+  "or",
   "evaluation",
 ]);
 
@@ -208,6 +211,32 @@ const checkOccurrence = (
   }
 };
 
+const checkArgumentCount = (
+  directive: Directive,
+  body: RuleBody,
+  issues: LintIssue[],
+): void => {
+  const count = directive.args.length;
+  if (typeof body.minArgs === "number" && count < body.minArgs) {
+    issues.push({
+      message:
+        body.message ??
+        `expected at least ${body.minArgs} argument(s), got ${count}`,
+      severity: body.severity ?? "error",
+      loc: directiveLoc(directive),
+    });
+  }
+  if (typeof body.maxArgs === "number" && count > body.maxArgs) {
+    issues.push({
+      message:
+        body.message ??
+        `expected at most ${body.maxArgs} argument(s), got ${count}`,
+      severity: body.severity ?? "error",
+      loc: argumentLoc(directive, body.maxArgs),
+    });
+  }
+};
+
 const applyValue = (
   matches: Directive[],
   argIndex: number | undefined,
@@ -237,6 +266,36 @@ const applyValue = (
       severity: body.severity ?? "error",
       loc: contextParents[0] ? directiveLoc(contextParents[0]) : undefined,
     });
+  }
+
+  for (const directive of matches) {
+    checkArgumentCount(directive, body, issues);
+  }
+
+  if (body.or) {
+    for (const directive of matches) {
+      const alternatives = body.or.map((entry) => {
+        const entryIssues: LintIssue[] = [];
+        applyValue([directive], undefined, entry, entryIssues, root);
+        return entryIssues;
+      });
+      if (alternatives.some((entryIssues) => entryIssues.length === 0)) {
+        continue;
+      }
+      if (body.message) {
+        issues.push({
+          message: body.message,
+          severity: body.severity ?? "error",
+          loc: directiveLoc(directive),
+        });
+      } else {
+        issues.push(
+          ...alternatives.reduce((best, entryIssues) =>
+            entryIssues.length < best.length ? entryIssues : best,
+          ),
+        );
+      }
+    }
   }
 
   if (body.and) {
