@@ -23,8 +23,7 @@ const BODY_META_KEYS = new Set([
   "required",
   "max",
   "min",
-  "minArgs",
-  "maxArgs",
+  "argsLen",
   "message",
   "severity",
   "and",
@@ -216,25 +215,19 @@ const checkArgumentCount = (
   body: RuleBody,
   issues: LintIssue[],
 ): void => {
+  if (body.argsLen === undefined) return;
+  const [min, max] =
+    typeof body.argsLen === "number"
+      ? [body.argsLen, body.argsLen]
+      : body.argsLen;
   const count = directive.args.length;
-  if (typeof body.minArgs === "number" && count < body.minArgs) {
-    issues.push({
-      message:
-        body.message ??
-        `expected at least ${body.minArgs} argument(s), got ${count}`,
-      severity: body.severity ?? "error",
-      loc: directiveLoc(directive),
-    });
-  }
-  if (typeof body.maxArgs === "number" && count > body.maxArgs) {
-    issues.push({
-      message:
-        body.message ??
-        `expected at most ${body.maxArgs} argument(s), got ${count}`,
-      severity: body.severity ?? "error",
-      loc: argumentLoc(directive, body.maxArgs),
-    });
-  }
+  if (count >= min && count <= max) return;
+  const expected = min === max ? `${min}` : `${min} to ${max}`;
+  issues.push({
+    message: body.message ?? `expected ${expected} argument(s), got ${count}`,
+    severity: body.severity ?? "error",
+    loc: count > max ? argumentLoc(directive, max) : directiveLoc(directive),
+  });
 };
 
 const applyValue = (

@@ -8,8 +8,7 @@ const rules = parseLintRulesDonly(`
   or {
     # listen 0
     / {
-      minArgs 1
-      maxArgs 1
+      argsLen 1
       [1] {
         type "number"
         format "port"
@@ -18,8 +17,7 @@ const rules = parseLintRulesDonly(`
     }
     # listen http | listen https
     / {
-      minArgs 1
-      maxArgs 1
+      argsLen 1
       [1] {
         type "string"
         enum "http" "https"
@@ -28,8 +26,7 @@ const rules = parseLintRulesDonly(`
     }
     # listen http 0
     / {
-      minArgs 2
-      maxArgs 2
+      argsLen 2
       [1] {
         type "string"
         enum "http" "https"
@@ -42,8 +39,7 @@ const rules = parseLintRulesDonly(`
     }
     # listen https 127.0.0.1 8080 { ssl { ... } }
     / {
-      minArgs 3
-      maxArgs 3
+      argsLen 3
       [1] {
         type "string"
         enum "http" "https"
@@ -111,13 +107,13 @@ describe("listen con múltiples formatos", () => {
     const r = parseLintRulesDonly(`/listen {
  or {
  / {
- maxArgs 1
+ argsLen 0 1
  }
  / {
- minArgs 5
+ argsLen 5 9
  }
  }
 }`);
-    expect(lintSchema("listen a b c", r)[0]?.message).toContain("at most 1");
+    expect(lintSchema("listen a b c", r)[0]?.message).toContain("expected 0 to 1");
   });
 });

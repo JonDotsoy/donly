@@ -218,10 +218,12 @@ export interface RuleBody {
   max?: number;
   /** Requires at least this many occurrences of the sub-path this body belongs to. */
   min?: number;
-  /** Requires every matched directive to carry at least this many arguments. */
-  minArgs?: number;
-  /** Caps how many arguments every matched directive may carry. */
-  maxArgs?: number;
+  /**
+   * Number of arguments every matched directive must carry: a single number
+   * for an exact count (`1` / `[1]`), or `[min, max]` for an inclusive range.
+   * In the `.donly` DSL: `argsLen 1` or `argsLen 1 3`.
+   */
+  argsLen?: number | readonly [min: number, max: number];
   message?: string;
   severity?: RuleSeverity;
   /** Combines full, independently-addressed rules — see "`and` at the rule level". */
@@ -229,7 +231,7 @@ export interface RuleBody {
   /**
    * Alternative shapes for the *same* directive: each matched directive must
    * satisfy at least one entry (evaluated relative to that directive, so
-   * `minArgs`/`maxArgs`, `[N]` and `/child` keys inside an entry all apply
+   * `argsLen`, `[N]` and `/child` keys inside an entry all apply
    * to it). Unlike a document-level `or`, it is decided per directive, so
    * several occurrences may each pick a different alternative. `message` /
    * `severity` on this body replace the alternatives' own issues with one.
