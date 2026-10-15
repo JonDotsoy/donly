@@ -218,8 +218,13 @@ export interface RuleBody {
   max?: number;
   /** Requires at least this many occurrences of the sub-path this body belongs to. */
   min?: number;
+  /** Requires every matched directive to carry at least this many arguments. */
+  minArgs?: number;
+  /** Caps how many arguments every matched directive may carry. */
+  maxArgs?: number;
   /**
-   * Number of arguments every matched directive must carry: a single number
+   * Shorthand for `minArgs` + `maxArgs`: number of arguments every matched
+   * directive must carry: a single number
    * for an exact count (`1` / `[1]`), or `[min, max]` for an inclusive range.
    * In the `.donly` DSL: `argsLen 1` or `argsLen 1 3`.
    */

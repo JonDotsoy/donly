@@ -116,4 +116,13 @@ describe("listen con múltiples formatos", () => {
 }`);
     expect(lintSchema("listen a b c", r)[0]?.message).toContain("expected 0 to 1");
   });
+  test("minArgs y maxArgs se pueden usar por separado", () => {
+    const r = parseLintRulesDonly(`/listen {
+  minArgs 2
+  maxArgs 3
+}`);
+    expect(lintSchema("listen a b", r)).toEqual([]);
+    expect(lintSchema("listen a", r)[0]?.message).toContain("2 to 3");
+    expect(lintSchema("listen a b c d", r)[0]?.message).toContain("2 to 3");
+  });
 });

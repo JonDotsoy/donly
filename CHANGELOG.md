@@ -15,7 +15,7 @@ documentation.
 
 - Lint rule bodies accept `or` (alternative shapes decided per matched
   directive, so a directive such as `listen` can be valid in several formats)
-  and `argsLen` (exact argument count, or `argsLen MIN MAX` range). Also available in the
+  `minArgs` / `maxArgs`, and `argsLen` (shorthand: `argsLen N` exact count, `argsLen MIN MAX` range). Also available in the
   `.donly` rules DSL.
 - `LintRuleDocument` `format` attribute (also accepted by the lint rules DSL),
   validated with `temporal-polyfill`. With `type: "string"`: `"duration"`,

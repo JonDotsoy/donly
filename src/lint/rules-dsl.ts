@@ -59,6 +59,8 @@ const KNOWN_PROPERTY_NAMES = new Set([
   "max",
   "min",
   "argsLen",
+  "minArgs",
+  "maxArgs",
   "message",
   "severity",
   "type",
