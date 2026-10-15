@@ -1,0 +1,128 @@
+import { describe, expect, test } from "bun:test";
+import { lintSchema } from "./lint-schema.js";
+import { parseLintRulesDonly } from "./rules-dsl.js";
+
+const rules = parseLintRulesDonly(`
+/listen {
+  message "listen: formato inválido (ver docs)"
+  or {
+    # listen 0
+    / {
+      argsLen 1
+      [1] {
+        type "number"
+        format "port"
+      }
+      /ssl { max 0 }
+    }
+    # listen http | listen https
+    / {
+      argsLen 1
+      [1] {
+        type "string"
+        enum "http" "https"
+      }
+      /ssl { max 0 }
+    }
+    # listen http 0
+    / {
+      argsLen 2
+      [1] {
+        type "string"
+        enum "http" "https"
+      }
+      [2] {
+        type "number"
+        format "port"
+      }
+      /ssl { max 0 }
+    }
+    # listen https 127.0.0.1 8080 { ssl { ... } }
+    / {
+      argsLen 3
+      [1] {
+        type "string"
+        enum "http" "https"
+      }
+      [2] {
+        or {
+          / {
+            type "string"
+            format "ipv4"
+          }
+          / {
+            type "string"
+            format "hostname"
+          }
+        }
+      }
+      [3] {
+        type "number"
+        format "port"
+      }
+      /ssl { max 1 }
+    }
+  }
+}
+`);
+
+const ok = [
+  "listen 0",
+  "listen http",
+  "listen http 0",
+  "listen http 127.0.0.1 8080",
+  "listen https",
+  "listen https 127.0.0.1 0",
+  "listen https 127.0.0.1 8080",
+  "listen https 127.0.0.1 8080 { ssl { cert a\n key b } }",
+  "listen https localhost 8080",
+];
+const bad = [
+  "listen",
+  "listen 70000",
+  "listen ftp",
+  "listen http 0 1",
+  "listen http 127.0.0.1 8080 9",
+  "listen http 0 { ssl { cert a } }",
+  "listen 0x1F", // DON lo parsea como string
+  "listen null",
+];
+
+describe("listen con múltiples formatos", () => {
+  for (const src of ok) {
+    test(`acepta ${JSON.stringify(src)}`, () => {
+      expect(lintSchema(src, rules)).toEqual([]);
+    });
+  }
+  for (const src of bad) {
+    test(`rechaza ${JSON.stringify(src)}`, () => {
+      expect(lintSchema(src, rules).length).toBeGreaterThan(0);
+    });
+  }
+  test("cada listen elige su propia alternativa", () => {
+    expect(lintSchema("listen 0\nlisten https 127.0.0.1 8080\nlisten http", rules)).toEqual([]);
+    expect(lintSchema("listen 0\nlisten ftp", rules)).toHaveLength(1);
+  });
+  test("sin message se reporta la alternativa más cercana", () => {
+    const r = parseLintRulesDonly(`/listen {
+ or {
+ / {
+ argsLen 0 1
+ }
+ / {
+ argsLen 5 9
+ }
+ }
+}`);
+    expect(lintSchema("listen a b c", r)[0]?.message).toContain("expected 0 to 1");
+  });
+  test("minArgs y maxArgs se pueden usar por separado", () => {
+    const r = parseLintRulesDonly(`/listen {
+  minArgs 2
+  maxArgs 3
+}`);
+    expect(lintSchema("listen a b", r)).toEqual([]);
+    expect(lintSchema("listen a", r)[0]?.message).toContain("2 to 3");
+    expect(lintSchema("listen a b c d", r)[0]?.message).toContain("2 to 3");
+  });
+});

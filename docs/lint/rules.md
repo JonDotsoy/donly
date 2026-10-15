@@ -1393,6 +1393,46 @@ server.donly
 1 error 0 warnings 0 info
 ```
 
+## `or` and `minArgs` / `maxArgs` / `argsLen` at the rule level: a directive with several formats
+
+A directive such as `listen` may legitimately appear as `listen 0`,
+`listen http`, `listen http 0`, `listen https 127.0.0.1 8080 { ssl { ... } }`,
+etc. A rule body accepts `or`: a list of alternative bodies, each evaluated
+relative to **the same matched directive**. A directive passes if at least one
+alternative reports no issues, so every `listen` picks its own shape
+(unlike a document-level `or`, which is decided once for the whole document).
+`minArgs` / `maxArgs` limit the number of arguments; `argsLen N` (exact) or
+`argsLen MIN MAX` (range) is shorthand for both. Counting arguments is something
+`[N]` alone cannot express. Setting `message` on the body replaces the alternatives' issues with
+one; without it, the issues of the closest alternative are reported.
+
+```don
+/listen {
+  message "listen: formato inválido"
+  or {
+    / {
+      argsLen 1
+      [1] {
+        type "number"
+        format "port"
+      }
+    }
+    / {
+      argsLen 3
+      [1] {
+        enum "http" "https"
+      }
+      [3] {
+        type "number"
+        format "port"
+      }
+    }
+  }
+}
+```
+
+A full, tested version lives in `src/lint/listen-directive.spec.ts`.
+
 ## `and` at the rule level: composing full rules
 
 `and` isn't limited to constraints on an argument selector — a rule body

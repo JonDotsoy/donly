@@ -23,9 +23,13 @@ const BODY_META_KEYS = new Set([
   "required",
   "max",
   "min",
+  "argsLen",
+  "minArgs",
+  "maxArgs",
   "message",
   "severity",
   "and",
+  "or",
   "evaluation",
 ]);
 
@@ -208,6 +212,34 @@ const checkOccurrence = (
   }
 };
 
+const checkArgumentCount = (
+  directive: Directive,
+  body: RuleBody,
+  issues: LintIssue[],
+): void => {
+  const [lenMin, lenMax] =
+    body.argsLen === undefined
+      ? [undefined, undefined]
+      : typeof body.argsLen === "number"
+        ? [body.argsLen, body.argsLen]
+        : body.argsLen;
+  const min = Math.max(body.minArgs ?? 0, lenMin ?? 0);
+  const max = Math.min(body.maxArgs ?? Infinity, lenMax ?? Infinity);
+  const count = directive.args.length;
+  if (count >= min && count <= max) return;
+  const expected =
+    max === Infinity
+      ? `at least ${min}`
+      : min === max
+        ? `${min}`
+        : `${min} to ${max}`;
+  issues.push({
+    message: body.message ?? `expected ${expected} argument(s), got ${count}`,
+    severity: body.severity ?? "error",
+    loc: count > max ? argumentLoc(directive, max) : directiveLoc(directive),
+  });
+};
+
 const applyValue = (
   matches: Directive[],
   argIndex: number | undefined,
@@ -237,6 +269,36 @@ const applyValue = (
       severity: body.severity ?? "error",
       loc: contextParents[0] ? directiveLoc(contextParents[0]) : undefined,
     });
+  }
+
+  for (const directive of matches) {
+    checkArgumentCount(directive, body, issues);
+  }
+
+  if (body.or) {
+    for (const directive of matches) {
+      const alternatives = body.or.map((entry) => {
+        const entryIssues: LintIssue[] = [];
+        applyValue([directive], undefined, entry, entryIssues, root);
+        return entryIssues;
+      });
+      if (alternatives.some((entryIssues) => entryIssues.length === 0)) {
+        continue;
+      }
+      if (body.message) {
+        issues.push({
+          message: body.message,
+          severity: body.severity ?? "error",
+          loc: directiveLoc(directive),
+        });
+      } else {
+        issues.push(
+          ...alternatives.reduce((best, entryIssues) =>
+            entryIssues.length < best.length ? entryIssues : best,
+          ),
+        );
+      }
+    }
   }
 
   if (body.and) {
